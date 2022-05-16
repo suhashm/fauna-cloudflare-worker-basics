@@ -74,4 +74,40 @@ app.get('/tweet/:id', async (req, res) => {
     }
 })
 
+app.post('/relationship', async (req, res) => {
+
+    const follower = req.body.follower
+    const followee = req.body.followee
+
+    const data = {
+        follower: Call(Fn("getUser"), follower),
+        followee: Call(Fn("getUser"), followee)
+    }
+    const doc = await client.query(
+        Create(
+            Collection('relationships'),
+            { data }
+        )
+    )
+
+    res.send(doc)
+});
+
+app.get('/feed', async (req, res) => {
+    const follower = req.query.follower
+    const docs = await client.query(
+        Paginate(
+            Join(
+                Match(
+                    Index('followees_by_follower_2'),
+                    Call(Fn("getUser"), follower)
+                ),
+                Index('tweets_by_user'),
+            )
+        )
+    )
+
+    res.send(docs)
+});
+
 app.listen(5000, () => console.log('API  running on http://localhost:5000'))
